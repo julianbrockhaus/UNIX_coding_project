@@ -26,7 +26,7 @@ then
 elif [ ! -d $1 -o ! -r $1 ]
 then
 	echo "Source directory does not exist or is not readable"
-elif [ ! -w $2 ]
+elif [ ! -d $2 -o ! -w $2 ]
 then
 	echo "Target directory does not exist or is not writeable"
 else
@@ -36,18 +36,32 @@ else
 	#copy all files except directories from source into target directory
 	for j in $source_dir_files
 	do
+		#if file in source directory is directory or not readable --> continue
 		if [ -d $path_source_dir/$j ]
 		then
+			continue
+		elif [ ! -r $path_source_dir/$j]
+		then
+			echo "$path_source_dir/$j is not readable."
 			continue
 		fi
 
 		echo "Copy $path_source_dir/$j to $path_target_dir"
 		copy $j
-
+		
+		#if 4 arguments are found the find and replace takes place
 		if [ $fandr = true ]
 		then
-			echo "Find and replace in $path_target_dir/$j"
-			find_replace $j $3 $4
+			#if Non-ASCII file finde and replace can not take place
+			ascii_count=$(file $path_target_dir/$j | grep -c ASCII)
+			if [ $ascii_count -eq 0 ]
+			then
+				echo "Could not perform find and replace. $path_target_dir/$j is Non-ASCII file."
+				continue
+			else
+				echo "Find and replace in $path_target_dir/$j"
+				find_replace $j $3 $4
+			fi
 		fi
 	done
 fi
